@@ -89,19 +89,90 @@ OPENAI_API_KEY=your-api-key-here
 - **聊天历史搜索**：支持 `/search` 命令和关键词搜索历史记录
 - **智能搜索检测**：自动识别用户搜索意图
 
-**核心函数：**
-| 函数 | 功能 |
-|------|------|
-| `extract_5w_info()` | 调用LLM提取5W关键信息 |
-| `append_to_log()` | 追加日志到log.txt |
-| `should_search_history()` | 检测是否需要搜索历史 |
-| `search_history()` | 搜索聊天历史并返回结果 |
-
 **教学目标：**
 1. 学习5W信息提取方法
 2. 掌握增量文件写入技术
 3. 理解意图识别与搜索结合
 4. 学习结合历史记录的上下文对话
+
+### practice04/chat_client.py
+
+**功能用途：**
+- **AnythingLLM集成**：使用subprocess调用curl访问AnythingLLM API
+- **文档仓库查询**：支持查询本地文档仓库中的知识
+- **智能触发**：当用户提到"文档仓库"、"文件仓库"、"仓库"时自动触发
+
+**配置要求：**
+- 在.env文件中配置 `ANYTHINGLLM_API_KEY` 和 `ANYTHINGLLM_WORKSPACE_SLUG`
+- 确保AnythingLLM运行在 `http://localhost:3001`
+
+**教学目标：**
+1. 学习subprocess模块调用外部命令
+2. 理解API认证和HTTP请求构造
+3. 掌握文档仓库RAG应用开发
+
+### practice06/skill_client.py
+
+**功能用途：**
+- **技能列表管理**：自动扫描 `.agents/skills` 目录下的所有技能
+- **YAML Front Matter解析**：提取每个技能的name和description字段
+- **技能正文加载**：当LLM需要使用技能时，加载该技能的完整内容
+- **动态技能注入**：将技能列表以JSON格式发送给LLM
+
+**教学目标：**
+1. 学习目录扫描和文件遍历技术
+2. 掌握YAML front matter解析方法
+3. 理解动态技能加载机制
+
+### practice06/tool_client.py
+
+**功能用途：**
+- **工具调用版技能管理**：使用标准Function Call机制调用技能
+- **支持多种工具**：list_available_skills、load_skill_content
+- **自动工具选择**：LLM根据请求自动选择并调用工具
+
+**教学目标：**
+1. 学习OpenAI标准工具调用格式
+2. 掌握工具定义和参数传递
+3. 理解工具调用响应处理流程
+
+### practice07/tool_client.py
+
+**功能用途：**
+- **链式工具调用**：前一个工具的输出作为后一个工具的输入
+- **智能决策循环**：LLM根据中间结果自主决定下一步操作
+- **上下文管理**：记录每一步调用和结果，存储中间变量
+- **防无限循环**：设置最大迭代次数限制（默认10次）
+
+**核心组件：**
+| 组件 | 功能 |
+|------|------|
+| `ChainedCallContext` | 链式调用上下文管理器 |
+| `execute_chained_tool_call` | 链式调用执行函数 |
+| `build_analysis_prompt` | 分析提示词构建函数 |
+| `extract_json_from_response` | JSON响应解析函数 |
+
+**支持的工具：**
+- `list_files(directory)` - 列出目录文件
+- `read_file(directory, filename)` - 读取文件内容
+- `create_file(directory, filename, content)` - 创建文件
+- `delete_file(directory, filename)` - 删除文件
+- `rename_file(directory, old_name, new_name)` - 重命名文件
+- `fetch_url(url)` - 访问网页
+- `list_available_skills()` - 列出技能
+- `load_skill_content(skill_name)` - 加载技能内容
+
+**输出格式：**
+```json
+{"done": true, "answer": "最终回答内容"}
+{"done": false, "tool_call": {"name": "工具名称", "arguments": {...}}}
+```
+
+**教学目标：**
+1. 理解链式工具调用的概念和应用场景
+2. 掌握上下文管理器的设计和实现
+3. 学习多轮工具调用的循环控制
+4. 理解如何让LLM根据中间结果做决策
 
 ## 使用示例
 
@@ -261,13 +332,25 @@ AI: 根据聊天历史记录，您今天进行了以下活动：
 ├── env.example          # 环境变量模板文件
 ├── .gitignore           # Git忽略配置
 ├── venv/                # Python虚拟环境
+├── .agents/             # 技能目录
+│   └── skills/          # 技能列表
+│       └── init-article/ # 示例技能
 ├── practice01/          # 练习01：LLM基础调用
 │   └── llm_client.py    # LLM客户端脚本
 ├── practice02/          # 练习02：工具调用
 │   └── tool_client.py   # 工具调用客户端脚本
-└── practice03/          # 练习03：聊天记录管理与历史
-    ├── chat_compression.py  # 聊天压缩客户端脚本
-    └── chat_history.py      # 聊天历史管理脚本
+├── practice03/          # 练习03：聊天记录管理与历史
+│   ├── chat_compression.py  # 聊天压缩客户端脚本
+│   └── chat_history.py      # 聊天历史管理脚本
+├── practice04/          # 练习04：AnythingLLM集成
+│   └── chat_client.py   # AnythingLLM集成脚本
+├── practice06/          # 练习06：技能管理系统
+│   ├── skill_client.py  # 标签触发版技能管理
+│   └── tool_client.py   # Function Call版技能管理
+└── practice07/          # 练习07：链式工具调用
+    ├── tool_client.py   # 链式工具调用实现
+    ├── 1.txt            # 测试文件1
+    └── 2.txt            # 测试文件2
 ```
 
 ## 教学进度
@@ -277,3 +360,6 @@ AI: 根据聊天历史记录，您今天进行了以下活动：
 | Practice 01 | LLM基础调用与性能统计 | ✅ 完成 |
 | Practice 02 | 工具调用功能实现 | ✅ 完成 |
 | Practice 03 | 聊天记录压缩与历史管理 | ✅ 完成 |
+| Practice 04 | AnythingLLM文档仓库集成 | ✅ 完成 |
+| Practice 06 | 技能管理系统 | ✅ 完成 |
+| Practice 07 | 链式工具调用 | ✅ 完成 |
